@@ -42,7 +42,7 @@ public class BasicWritingDetection implements WritingDetection {
     }
 
 
-    public static void main(String[] args) {
+    public static void _main(String[] args) {
 
         BasicWritingDetection detection = new BasicWritingDetection();
         detection.detectWriting();

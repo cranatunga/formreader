@@ -1,7 +1,6 @@
 package formreader.to.template;
 
 import formreader.to.AreaTO;
-import formreader.to.PointTO;
 
 public class PersonMetadataTO {
 

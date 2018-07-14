@@ -1,9 +1,11 @@
 package formreader.to.template;
 
-public class TemplateMetadataConstants {
+public interface TemplateMetadataConstants {
 
-    private interface AnswerLabelLocation {
-
+    interface AnswerContentPosition {
+        String TOP = "TOP";
+        String LEFT = "LEFT";
+        String COMMON_TOP = "COMMON_TOP";
     }
 
 }
