@@ -1,0 +1,18 @@
+Upload Template
+---------------
+POST: http://localhost:8080/test/formreader/template?file=01.jpg
+---------------
+{
+	"questionnaireName": "q1",
+	"sheetNumber": 1,
+	"questions": [{
+		"question": {
+			"top": 740,
+			"left": 300,
+			"height": 200,
+			"width": 1450
+		},
+		"answerContentPosition": "LEFT"
+	}]
+}
+---------------
