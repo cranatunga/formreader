@@ -1,0 +1,1 @@
+-Djava.library.path=/home/chirantha/installations/opencv-3.4.0/02/lib

@@ -4,6 +4,10 @@ public class BaseResponse {
 
     private Boolean success;
 
+    public BaseResponse() {
+        success = true;
+    }
+
     public Boolean getSuccess() {
         return success;
     }

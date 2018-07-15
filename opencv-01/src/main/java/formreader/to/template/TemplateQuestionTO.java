@@ -4,13 +4,12 @@ import formreader.to.AreaTO;
 
 import java.util.List;
 
-public class QuestionMetadataTO {
+public class TemplateQuestionTO {
 
     private AreaTO questionNumber;
     private AreaTO question;
     private String answerContentPosition;
-    private List<AnswerMetadataTO> answers;
-    private List<QuestionMetadataTO> subQuestions;
+    private List<TemplateQuestionTO> subQuestions;
 
     public AreaTO getQuestionNumber() {
         return questionNumber;
@@ -36,19 +35,11 @@ public class QuestionMetadataTO {
         this.answerContentPosition = answerContentPosition;
     }
 
-    public List<AnswerMetadataTO> getAnswers() {
-        return answers;
-    }
-
-    public void setAnswers(List<AnswerMetadataTO> answers) {
-        this.answers = answers;
-    }
-
-    public List<QuestionMetadataTO> getSubQuestions() {
+    public List<TemplateQuestionTO> getSubQuestions() {
         return subQuestions;
     }
 
-    public void setSubQuestions(List<QuestionMetadataTO> subQuestions) {
+    public void setSubQuestions(List<TemplateQuestionTO> subQuestions) {
         this.subQuestions = subQuestions;
     }
 }

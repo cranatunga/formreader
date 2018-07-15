@@ -1,12 +1,23 @@
 package formreader.to.template;
 
+import formreader.to.PersonMetadataTO;
+
 import java.util.List;
 
-public class SheetMetadataTO {
+public class TemplateMetadataTO {
 
+    private String questionnaireName;
     private Integer sheetNumber;
     private PersonMetadataTO person;
-    private List<QuestionMetadataTO> questions;
+    private List<TemplateQuestionTO> questions;
+
+    public String getQuestionnaireName() {
+        return questionnaireName;
+    }
+
+    public void setQuestionnaireName(String questionnaireName) {
+        this.questionnaireName = questionnaireName;
+    }
 
     public Integer getSheetNumber() {
         return sheetNumber;
@@ -24,11 +35,11 @@ public class SheetMetadataTO {
         this.person = person;
     }
 
-    public List<QuestionMetadataTO> getQuestions() {
+    public List<TemplateQuestionTO> getQuestions() {
         return questions;
     }
 
-    public void setQuestions(List<QuestionMetadataTO> questions) {
+    public void setQuestions(List<TemplateQuestionTO> questions) {
         this.questions = questions;
     }
 }

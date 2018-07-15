@@ -4,40 +4,40 @@ import java.math.BigDecimal;
 
 public class AreaTO {
 
-    private BigDecimal top;
-    private BigDecimal left;
-    private BigDecimal height;
-    private BigDecimal width;
+    private Integer top;
+    private Integer left;
+    private Integer height;
+    private Integer width;
 
-    public BigDecimal getTop() {
+    public Integer getTop() {
         return top;
     }
 
-    public void setTop(BigDecimal top) {
+    public void setTop(Integer top) {
         this.top = top;
     }
 
-    public BigDecimal getLeft() {
+    public Integer getLeft() {
         return left;
     }
 
-    public void setLeft(BigDecimal left) {
+    public void setLeft(Integer left) {
         this.left = left;
     }
 
-    public BigDecimal getHeight() {
+    public Integer getHeight() {
         return height;
     }
 
-    public void setHeight(BigDecimal height) {
+    public void setHeight(Integer height) {
         this.height = height;
     }
 
-    public BigDecimal getWidth() {
+    public Integer getWidth() {
         return width;
     }
 
-    public void setWidth(BigDecimal width) {
+    public void setWidth(Integer width) {
         this.width = width;
     }
 }

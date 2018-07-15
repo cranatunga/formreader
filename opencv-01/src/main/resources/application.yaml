@@ -1,0 +1,6 @@
+formreader:
+  opencv:
+
+  path:
+    objects: /home/chirantha/code/rnd/java/01/java-02/02/
+    temp-image: /home/chirantha/code/rnd/java/01/java-02/temp/

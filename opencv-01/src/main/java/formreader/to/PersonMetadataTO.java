@@ -1,6 +1,4 @@
-package formreader.to.template;
-
-import formreader.to.AreaTO;
+package formreader.to;
 
 public class PersonMetadataTO {
 
