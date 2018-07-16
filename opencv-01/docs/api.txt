@@ -16,3 +16,18 @@ POST: http://localhost:8080/test/formreader/template?file=01.jpg
 	}]
 }
 ---------------
+
+POST: http://localhost:8080/test/formreader/response
+REQUEST:
+{
+}
+---------------
+RESPONSE:
+{
+    "questionName": "x",
+    "answers": [{
+        "answer": "a",
+        "count": 1
+    }]
+}
+---------------
