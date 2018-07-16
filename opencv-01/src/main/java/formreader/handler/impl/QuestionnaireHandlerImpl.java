@@ -12,10 +12,13 @@ import formreader.util.FormReaderUtil;
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.Objdetect;
+import org.opencv.utils.Converters;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,6 +27,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
+
+    private interface IntermediaryFileName {
+        String[] BOUNDARIES_MARKED = {"1"};
+        String[] SPLIT_QUESTION = {"2"};
+        String[] OBJECT_CIRCLES = {"3", "1"};
+        String[] OBJECT_SQUARES = {"3", "2"};
+        String[] TEXT_QUESTION = {"4", "1"};
+        String[] TEXT_OPTIONS = {"4", "2"};
+    }
 
     @Autowired
     private FormReaderConfig config;
@@ -52,12 +64,87 @@ public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
                             q.getQuestion().getLeft(),
                             q.getQuestion().getLeft() + q.getQuestion().getWidth());
 
+                    Mat m = tempMatrix;
+
+                    Mat optionsProcess = new Mat(tempMatrix.rows(), tempMatrix.cols(), tempMatrix.type());
+                    Mat textProcess = new Mat(tempMatrix.rows(), tempMatrix.cols(), tempMatrix.type());
+
+                    Imgproc.cvtColor(tempMatrix, textProcess, Imgproc.COLOR_BGR2GRAY);
+                    Imgproc.GaussianBlur(textProcess, textProcess, new Size(9, 9), 2, 2 );
+                    Imgproc.Canny(textProcess, textProcess, 40, 50);
+
+                    Mat space  = getSpace();
+
+                    List<MatOfPoint> textContours = new ArrayList<>();
+                    Imgproc.findContours(textProcess, textContours, new Mat(),
+                            Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
+
+                    System.out.println("---------");
+                    Mat spaces = tempMatrix.clone();
+//                    Mat spaces = new Mat(tempMatrix.rows(), tempMatrix.cols(), CvType.CV_8UC3, new Scalar(255, 255, 255));
+                    Imgproc.drawContours(spaces, textContours, -1, new Scalar(0, 255, 0), 4);
+
+
+                    List<MatOfPoint>[] arr = new List[tempMatrix.cols() + 1];
+                    textContours.forEach(c -> {
+                        Rect rect = Imgproc.boundingRect(c);
+                        if (arr[rect.x] == null) {
+                            arr[rect.x] = new ArrayList<>();
+                        }
+                        arr[rect.x].add(c);
+                        System.out.println("--" + rect.x + "--" + rect.y + "--" + rect.width + "--" + rect.height + "--"
+                                + Imgproc.contourArea(c));
+                    });
+                    List<List<MatOfPoint>> secs = new ArrayList<>();
+                    List<MatOfPoint> tempSec = new ArrayList<>();
+                    int max = 50;
+                    int w = 0;
+                    for (int i = 0; i < arr.length; i++) {
+                        if (arr[i] == null || arr[i].isEmpty()) {
+                            w++;
+                        } else if (w > max && arr[i] != null && (!arr[i].isEmpty())) {
+                            w = 0;
+                            if (!tempSec.isEmpty()) {
+                                secs.add(tempSec);
+                                tempSec = new ArrayList<>();
+                            }
+                        } else if (arr[i] != null) {
+                            w = 0;
+                            tempSec.addAll(arr[i]);
+                        }
+                    }
+
+                    secs.forEach(s -> {
+                        Imgproc.rectangle(spaces,
+                                new Point(s.get(0).toList().get(0).x, s.get(0).toList().get(0).y),
+                                new Point(s.get(s.size() - 1).toList().get(0).x, s.get(s.size() - 1).toList().get(0).y),
+                                new Scalar(255, 0, 0), 4);
+                            });
+
+                    Imgcodecs.imwrite(FormReaderUtil.getIntermediateFileName(file, "1", String.valueOf(index), "4"), spaces);
+
+
+
+
+//                    Mat textProcess1 = new Mat(textProcess.rows(), textProcess.cols(), textProcess.type());
+//                    Mat markers1 = new Mat(textProcess.size(),CvType.CV_8U, new Scalar(0));
+//                    Mat markers2 =new Mat();
+//                    markers1.convertTo(markers2, CvType.CV_32SC1);
+//                    Imgproc.connectedComponents(textProcess, textProcess1);
+
+
+
+//                    Imgcodecs.imwrite(FormReaderUtil.getIntermediateFileName(file, "1", String.valueOf(index), "3"), markers2);
+
+
+
+
                     Mat circles = new Mat(tempMatrix.rows(), tempMatrix.cols(), CvType.CV_8UC3, new Scalar(255, 255, 255));
                     int minRadius = 10;
                     int maxRadius = 20;
-                    Imgproc.cvtColor(tempMatrix, tempMatrix, Imgproc.COLOR_BGR2GRAY);
-                    Imgproc.GaussianBlur( tempMatrix, tempMatrix, new Size(9, 9), 2, 2 );
-                    Imgproc.Canny(tempMatrix, tempMatrix, 40, 50);
+                    Imgproc.cvtColor(optionsProcess, optionsProcess, Imgproc.COLOR_BGR2GRAY);
+                    Imgproc.GaussianBlur(optionsProcess, optionsProcess, new Size(9, 9), 2, 2 );
+                    Imgproc.Canny(optionsProcess, optionsProcess, 40, 50);
 
 //                    Mat cannyEdges = new Mat();
 //                    Imgproc.Canny(tempMatrix, cannyEdges, 10, 100);
@@ -84,7 +171,7 @@ public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
                     */
 
                     List<MatOfPoint> edgeContours = new ArrayList<>();
-                    Imgproc.findContours(tempMatrix, edgeContours, new Mat(),
+                    Imgproc.findContours(optionsProcess, edgeContours, new Mat(),
                             Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
 
 
@@ -114,22 +201,25 @@ public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
 
                     Imgcodecs.imwrite(FormReaderUtil.getIntermediateFileName(file, "1", String.valueOf(index), "1"), circles);
 
+
+                    try {
+                        Imgcodecs.imwrite(FormReaderUtil.getIntermediateFileName(file, "1", String.valueOf(index), "2"), m);
+
+                        File temp = new File(FormReaderUtil.getIntermediateFileName(file, "1", String.valueOf(index), "2"));
+                        String s = ocr.read(temp);
+                        System.out.println(s);
+
+                    } catch (Exception e) {
+
+                        e.printStackTrace();
+                    }
+
+
                     sheetMetadataTO.getQuestions()
                             .put(FormReaderConstants.PREFIX_AUTO_ASSIGN_ID + index, questionMetadataTO);
 
 
                 });
-
-
-        String ocrFile = "/home/chirantha/code/rnd/java/01/java-02/01/02.jpg";
-        Mat m = Imgcodecs.imread(ocrFile);
-        byte[] return_buff = new byte[(int) (m.total() *
-                m.channels())];
-        m.get(0, 0, return_buff);
-
-        File f = new File("/home/chirantha/code/rnd/java/01/java-02/01/02.jpg");
-        String s = ocr.read(f);
-        System.out.println(s);
 
         Imgcodecs.imwrite(FormReaderUtil.getIntermediateFileName(file, "1"), matrix);
         return sheetMetadataTO;
@@ -157,6 +247,17 @@ public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
 
         return circle;
     }
+
+    private Mat getSpace() {
+
+        String circleFileName = config.getPath().getObjects() + "space.jpg";
+        Mat matrix = Imgcodecs.imread(circleFileName);
+
+        Imgproc.cvtColor(matrix, matrix, Imgproc.COLOR_BGR2GRAY);
+
+        return matrix;
+    }
+
 
     public void setConfig(FormReaderConfig config) {
         this.config = config;
