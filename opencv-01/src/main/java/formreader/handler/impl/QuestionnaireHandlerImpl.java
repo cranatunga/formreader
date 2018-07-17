@@ -66,7 +66,7 @@ public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
 
                     Mat m = tempMatrix;
 
-                    Mat optionsProcess = new Mat(tempMatrix.rows(), tempMatrix.cols(), tempMatrix.type());
+                    Mat optionsProcess = tempMatrix.clone();
                     Mat textProcess = new Mat(tempMatrix.rows(), tempMatrix.cols(), tempMatrix.type());
 
                     Imgproc.cvtColor(tempMatrix, textProcess, Imgproc.COLOR_BGR2GRAY);
@@ -82,7 +82,6 @@ public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
                     System.out.println("---------");
                     Mat spaces = tempMatrix.clone();
 //                    Mat spaces = new Mat(tempMatrix.rows(), tempMatrix.cols(), CvType.CV_8UC3, new Scalar(255, 255, 255));
-                    Imgproc.drawContours(spaces, textContours, -1, new Scalar(0, 255, 0), 4);
 
 
                     List<MatOfPoint>[] arr = new List[tempMatrix.cols() + 1];
@@ -92,8 +91,6 @@ public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
                             arr[rect.x] = new ArrayList<>();
                         }
                         arr[rect.x].add(c);
-                        System.out.println("--" + rect.x + "--" + rect.y + "--" + rect.width + "--" + rect.height + "--"
-                                + Imgproc.contourArea(c));
                     });
                     List<List<MatOfPoint>> secs = new ArrayList<>();
                     List<MatOfPoint> tempSec = new ArrayList<>();
@@ -107,6 +104,7 @@ public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
                             if (!tempSec.isEmpty()) {
                                 secs.add(tempSec);
                                 tempSec = new ArrayList<>();
+                                tempSec.addAll(arr[i]);
                             }
                         } else if (arr[i] != null) {
                             w = 0;
@@ -115,11 +113,28 @@ public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
                     }
 
                     secs.forEach(s -> {
-                        Imgproc.rectangle(spaces,
-                                new Point(s.get(0).toList().get(0).x, s.get(0).toList().get(0).y),
-                                new Point(s.get(s.size() - 1).toList().get(0).x, s.get(s.size() - 1).toList().get(0).y),
-                                new Scalar(255, 0, 0), 4);
+                        Imgproc.drawContours(spaces, s, -1, new Scalar(0, 255, 0), 4);
+
+                        AtomicInteger t = new AtomicInteger(Integer.MAX_VALUE),
+                        l = new AtomicInteger(Integer.MAX_VALUE),
+                        b = new AtomicInteger(Integer.MIN_VALUE),
+                        r = new AtomicInteger(Integer.MIN_VALUE);
+                        s.forEach(mp -> {
+                            mp.toList().forEach(p -> {
+                                t.set(Math.min((int)p.y, t.get()));
+                                l.set(Math.min((int)p.x, l.get()));
+                                b.set(Math.max((int)p.y, b.get()));
+                                r.set(Math.max((int)p.x, r.get()));
                             });
+                        });
+
+                        Imgproc.rectangle(spaces,
+                                new Point(l.get() - 10, t.get() - 10),
+                                new Point(r.get() + 10, b.get() + 10),
+                                new Scalar(255, 0, 0), 4);
+
+                        System.out.println(l.get() + "--" + t.get() + "--" + r.get() + "--" + b.get());
+                    });
 
                     Imgcodecs.imwrite(FormReaderUtil.getIntermediateFileName(file, "1", String.valueOf(index), "4"), spaces);
 
@@ -181,8 +196,11 @@ public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
                     edgeContours.forEach(c -> {
                         Double d = Imgproc.matchShapes(c, circle, Imgproc.CV_CONTOURS_MATCH_I1, 0);
                         if (d < 0.001) {
-                            System.out.println(String.format("%.08f", d));
+//                            System.out.println(String.format("%.08f", d));
                             Imgproc.drawContours(circles, Collections.singletonList(c), -1, new Scalar(0, 255, 0), 1);
+
+                            Rect r = Imgproc.boundingRect(c);
+                            System.out.println("c : " + String.format("%.08f", d) + "--" + r.x + "--" + r.y + "--" + r.height + "--" + r.width);
                         }
 
                     });
