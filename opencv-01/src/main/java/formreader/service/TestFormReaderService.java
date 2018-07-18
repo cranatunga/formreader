@@ -7,7 +7,7 @@ import formreader.to.template.TemplateMetadataTO;
 
 public interface TestFormReaderService {
 
-    String FILE_LOCATION = "C:\\Work\\Code\\github\\formreader\\01\\";
+    String FILE_LOCATION = "/home/chirantha/code/rnd/java/01/java-02/01/";
 
     BaseResponse uploadTemplate(TemplateMetadataTO questionnaire, String file);
 
