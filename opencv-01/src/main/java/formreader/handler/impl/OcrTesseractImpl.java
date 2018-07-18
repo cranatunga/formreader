@@ -35,7 +35,7 @@ public class OcrTesseractImpl implements Ocr {
         ocr.startEngine("eng", com.asprise.ocr.Ocr.SPEED_FASTEST); // English
         String s = ocr.recognize(new File[] {file},
                 com.asprise.ocr.Ocr.RECOGNIZE_TYPE_ALL, com.asprise.ocr.Ocr.OUTPUT_FORMAT_PLAINTEXT);
-        System.out.println("Result: " + s);
+//        System.out.println("Result: " + s);
 // ocr more images here ...
         ocr.stopEngine();
 

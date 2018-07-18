@@ -7,6 +7,7 @@ import formreader.to.ProcessedAreaTO;
 import formreader.to.QuestionMetadataTO;
 import formreader.to.SheetMetadataTO;
 import formreader.to.config.FormReaderConfig;
+import formreader.to.template.TemplateMetadataConstants;
 import formreader.to.template.TemplateMetadataTO;
 import formreader.util.FormReaderUtil;
 import org.opencv.core.*;
@@ -19,10 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
@@ -111,6 +109,9 @@ public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
                             tempSec.addAll(arr[i]);
                         }
                     }
+                    secs.add(tempSec);
+
+                    List<Rect> textProcessRects = new ArrayList<>();
 
                     secs.forEach(s -> {
                         Imgproc.drawContours(spaces, s, -1, new Scalar(0, 255, 0), 4);
@@ -134,6 +135,7 @@ public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
                                 new Scalar(255, 0, 0), 4);
 
                         System.out.println(l.get() + "--" + t.get() + "--" + r.get() + "--" + b.get());
+                        textProcessRects.add(new Rect(new Point(l.get() - 10, t.get() - 10), new Point(r.get() + 10, b.get() + 10)));
                     });
 
                     Imgcodecs.imwrite(FormReaderUtil.getIntermediateFileName(file, "1", String.valueOf(index), "4"), spaces);
@@ -193,6 +195,7 @@ public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
                     MatOfPoint circle  = getCircle();
 
 
+                    List<Rect> optionProcessRects = new ArrayList<>();
                     edgeContours.forEach(c -> {
                         Double d = Imgproc.matchShapes(c, circle, Imgproc.CV_CONTOURS_MATCH_I1, 0);
                         if (d < 0.001) {
@@ -200,13 +203,11 @@ public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
                             Imgproc.drawContours(circles, Collections.singletonList(c), -1, new Scalar(0, 255, 0), 1);
 
                             Rect r = Imgproc.boundingRect(c);
+                            optionProcessRects.add(r);
                             System.out.println("c : " + String.format("%.08f", d) + "--" + r.x + "--" + r.y + "--" + r.height + "--" + r.width);
                         }
 
                     });
-
-
-//                    Imgproc.mat
 
                     Imgproc.rectangle (
                             matrix,
@@ -219,19 +220,7 @@ public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
 
                     Imgcodecs.imwrite(FormReaderUtil.getIntermediateFileName(file, "1", String.valueOf(index), "1"), circles);
 
-
-                    try {
-                        Imgcodecs.imwrite(FormReaderUtil.getIntermediateFileName(file, "1", String.valueOf(index), "2"), m);
-
-                        File temp = new File(FormReaderUtil.getIntermediateFileName(file, "1", String.valueOf(index), "2"));
-                        String s = ocr.read(temp);
-                        System.out.println(s);
-
-                    } catch (Exception e) {
-
-                        e.printStackTrace();
-                    }
-
+                    processQuestions(file, tempMatrix, textProcessRects, optionProcessRects, q.getAnswerContentPosition());
 
                     sheetMetadataTO.getQuestions()
                             .put(FormReaderConstants.PREFIX_AUTO_ASSIGN_ID + index, questionMetadataTO);
@@ -276,6 +265,142 @@ public class QuestionnaireHandlerImpl implements QuestionnaireHandler {
         return matrix;
     }
 
+    private ProcessedQuestion processQuestions(String file, Mat tempMatrix, List<Rect> textProcess, List<Rect> optionProcess, String position) {
+
+        ProcessedQuestion question = new ProcessedQuestion();
+        question.setQuestion(textProcess.get(0));
+
+        int countCountForNotSelected = 4;
+        int i = 0;
+
+        Mat m;
+
+        optionProcess.sort((o1, o2) -> {return o1.y - o2.y;});
+
+        m = tempMatrix.submat(textProcess.get(0));
+        try {
+            Imgcodecs.imwrite(FormReaderUtil.getIntermediateFileName(file, "5", String.valueOf(++i), "2"), m);
+
+            File temp = new File(FormReaderUtil.getIntermediateFileName(file, "5", String.valueOf(i), "2"));
+            String s = ocr.read(temp);
+            System.out.println("Question: -- " + s.trim());
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+        }
+
+        int cols = (textProcess.size() - 1) / 2;
+
+        if (TemplateMetadataConstants.AnswerContentPosition.LEFT.equals(position)) {
+            for (int a = 0; a < cols ; a++) {
+                try {
+                    m = tempMatrix.submat(textProcess.get((a * 2) + 1));
+                    Imgcodecs.imwrite(FormReaderUtil.getIntermediateFileName(file, "5", String.valueOf(++i), "2"), m);
+
+                    File temp = new File(FormReaderUtil.getIntermediateFileName(file, "5", String.valueOf(i), "2"));
+                    String s = ocr.read(temp);
+                    System.out.println("Answer: -- " + s.trim());
+
+                } catch (Exception e) {
+
+                    e.printStackTrace();
+                }
+
+
+                AtomicInteger c = new AtomicInteger(0);
+                Rect tempRect = textProcess.get((a * 2) + 2);
+                List<List<Rect>> scannedRects = new ArrayList<>();
+                List<Rect> currRects = null;
+                Rect lastRect = null;
+                for (Rect r : optionProcess) {
+                    if (tempRect.x < r.x && tempRect.x + tempRect.width > r.x + r.width) {
+                        if (lastRect == null) {
+                            lastRect = r;
+                            currRects = new ArrayList<>();
+                            currRects.add(r);
+                            scannedRects.add(currRects);
+                        } else {
+
+                            if (lastRect.x <= r.x && lastRect.x + lastRect.width >= r.x + r.width &&
+                                    lastRect.y + lastRect.height >= r.y + r.height ) {
+                                currRects.add(r);
+                                lastRect = r;
+                            } else {
+                                lastRect = r;
+                                currRects = new ArrayList<>();
+                                currRects.add(r);
+                                scannedRects.add(currRects);
+                            }
+
+                        }
+                    }
+                }
+
+                String answer = "";
+                for (List<Rect> scan : scannedRects) {
+                    if (scan.size() == countCountForNotSelected) {
+                        System.out.println("Option : Not Selected");
+                    } else {
+                        System.out.println("Option : Selected");
+                    }
+                }
+            }
+        }
+
+        return question;
+    }
+
+    class ProcessedQuestion {
+        private Rect question;
+        private List<ProcessedAnswer> answers;
+
+        public Rect getQuestion() {
+            return question;
+        }
+
+        public void setQuestion(Rect question) {
+            this.question = question;
+        }
+
+        public List<ProcessedAnswer> getAnswers() {
+            return answers;
+        }
+
+        public void setAnswers(List<ProcessedAnswer> answers) {
+            this.answers = answers;
+        }
+    }
+
+    class ProcessedAnswer {
+        private Rect answer;
+        private Rect mark;
+        private String output;
+
+        public Rect getAnswer() {
+            return answer;
+        }
+
+        public void setAnswer(Rect answer) {
+            this.answer = answer;
+        }
+
+        public Rect getMark() {
+            return mark;
+        }
+
+        public void setMark(Rect mark) {
+            this.mark = mark;
+        }
+
+        public String getOutput() {
+            return output;
+        }
+
+        public void setOutput(String output) {
+            this.output = output;
+        }
+    }
 
     public void setConfig(FormReaderConfig config) {
         this.config = config;
